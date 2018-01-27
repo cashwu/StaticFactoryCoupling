@@ -1,7 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NSubstitute;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Formatting;
 
 namespace StaticFactoryCoupling
 {
@@ -21,11 +20,18 @@ namespace StaticFactoryCoupling
                 new Order{ StoreType= StoreType.Family, Id=3},
             };
 
+            var fakeSeven = Substitute.For<IStoreService>();
+            SimpleFactory.SevenService = fakeSeven;
+            var fakeFamily = Substitute.For<IStoreService>();
+            SimpleFactory.FamilyService = fakeFamily;
+
             //act
             target.ShippingByStore(orders);
 
             //todo, assert
             //ShipService should invoke SevenService once and FamilyService twice
+            fakeFamily.ReceivedWithAnyArgs(2);
+            fakeSeven.ReceivedWithAnyArgs(1);
         }
     }
 
@@ -57,18 +63,33 @@ namespace StaticFactoryCoupling
 
     internal class SimpleFactory
     {
-        private static IStoreService sevenService = new SevenService();
-        private static IStoreService familyService = new FamilyService();
+        //private static IStoreService sevenService = new SevenService();
+        //private static IStoreService familyService = new FamilyService();
+        private static IStoreService _sevenService;
+
+        private static IStoreService _familyService;
+
+        internal static IStoreService SevenService
+        {
+            get => _sevenService ?? new SevenService();
+            set => _sevenService = value;
+        }
+
+        internal static IStoreService FamilyService
+        {
+            get => _familyService ?? new FamilyService();
+            set => _familyService = value;
+        }
 
         internal static IStoreService GetStoreService(Order order)
         {
             if (order.StoreType == StoreType.Family)
             {
-                return familyService;
+                return _familyService;
             }
             else
             {
-                return sevenService;
+                return _sevenService;
             }
         }
     }
@@ -85,8 +106,8 @@ namespace StaticFactoryCoupling
         public void Ship(Order order)
         {
             // seven web service
-            var client = new HttpClient();
-            client.PostAsync("http://api.seven.com/Order", order, new JsonMediaTypeFormatter());
+            //var client = new HttpClient();
+            //client.PostAsync("http://api.seven.com/Order", order, new JsonMediaTypeFormatter());
         }
     }
 
@@ -95,8 +116,8 @@ namespace StaticFactoryCoupling
         public void Ship(Order order)
         {
             // family web service
-            var client = new HttpClient();
-            client.PostAsync("http://api.family.com/Order", order, new JsonMediaTypeFormatter());
+            //var client = new HttpClient();
+            //client.PostAsync("http://api.family.com/Order", order, new JsonMediaTypeFormatter());
         }
     }
 
